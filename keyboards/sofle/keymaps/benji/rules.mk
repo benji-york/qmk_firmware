@@ -1,1 +1,2 @@
 TRI_LAYER_ENABLE = yes
+COMBO_ENABLE = yes
