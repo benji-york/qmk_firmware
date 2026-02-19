@@ -94,7 +94,7 @@ static void oled_render_held_matrix_positions(void) {
     }
 
     if (shown == 0) {
-        oled_write_ln(PSTR("None"), false);
+        //oled_write_ln(PSTR("None"), false);
     }
 }
 
@@ -108,7 +108,7 @@ void print_status_narrow(void) {
     //oled_write_ln_P(PSTR("LAYER"), false);
     switch (get_highest_layer(layer_state)) {
         case 0:
-            oled_write_P(PSTR("Base"), false);
+            //oled_write_P(PSTR("Base"), false);
             break;
         case 1:
             oled_write_P(PSTR(" 1"), false);
