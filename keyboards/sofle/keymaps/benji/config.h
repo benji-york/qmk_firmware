@@ -9,3 +9,5 @@
 
 #define HOLD_ON_OTHER_KEY_PRESS
 //#define PERMISSIVE_HOLD
+
+#define TAPPING_TERM 120
