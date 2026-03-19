@@ -1,0 +1,3 @@
+My keymap is in `keyboards/sofle/keymaps/benji/keymap.c`.
+
+To reflash, run `qmk flash -kb sofle/rev1 -km benji -e CONVERT_TO=rp2040_ce`.
