@@ -1,6 +1,241 @@
 // Copyright 2023 QMK
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include QMK_KEYBOARD_H
+#include "raw_hid.h"
+
+#ifdef SPLIT_KEYBOARD
+#    include "transactions.h"
+#endif
+
+typedef enum {
+    HOST_PERSONAL = 1,
+    HOST_WORK = 2,
+} host_t;
+
+#define HOST_CLAIM_TIMEOUT_MS 2500
+#define HOST_SYNC_RETRY_MS 100
+#define HOST_EEPROM_MAGIC 0x484F5300u
+#define HOST_EEPROM_MAGIC_MASK 0xFFFFFF00u
+#define HOST_MAGIC 0x42
+#define HOST_MSG_CLAIM 0x01
+#define HOST_ID_PERSONAL 0x01
+
+static host_t current_host = HOST_WORK;
+static uint32_t host_claim_started = 0;
+static bool host_claim_pending = false;
+
+#ifdef SPLIT_KEYBOARD
+static bool host_sync_dirty = true;
+static uint32_t host_sync_last = 0;
+#endif
+
+static bool host_state_authority(void) {
+#ifdef SPLIT_KEYBOARD
+    return is_keyboard_master();
+#else
+    return true;
+#endif
+}
+
+#ifdef SPLIT_KEYBOARD
+static void mark_host_sync_dirty(void) {
+    if (!host_state_authority()) {
+        return;
+    }
+
+    host_sync_dirty = true;
+    host_sync_last = timer_read32() - HOST_SYNC_RETRY_MS;
+}
+#endif
+
+static bool is_valid_host(host_t host) {
+    return host == HOST_PERSONAL || host == HOST_WORK;
+}
+
+static host_t persisted_host(void) {
+    uint32_t raw = eeconfig_read_user();
+    if ((raw & HOST_EEPROM_MAGIC_MASK) != HOST_EEPROM_MAGIC) {
+        return HOST_WORK;
+    }
+
+    host_t host = (host_t)(raw & 0xFFu);
+    return is_valid_host(host) ? host : HOST_WORK;
+}
+
+static void persist_host_local(host_t host) {
+    if (!is_valid_host(host)) {
+        return;
+    }
+
+    uint32_t raw = HOST_EEPROM_MAGIC | (uint8_t)host;
+    if (eeconfig_read_user() != raw) {
+        eeconfig_update_user(raw);
+    }
+}
+
+static void persist_host(host_t host) {
+    if (!host_state_authority()) {
+        return;
+    }
+
+    persist_host_local(host);
+}
+
+static host_t opposite_host(host_t host) {
+    return host == HOST_PERSONAL ? HOST_WORK : HOST_PERSONAL;
+}
+
+static void set_current_host(host_t host) {
+    if (!is_valid_host(host)) {
+        return;
+    }
+
+    if (current_host == host) {
+        persist_host(host);
+        return;
+    }
+
+    current_host = host;
+    persist_host(host);
+#ifdef SPLIT_KEYBOARD
+    mark_host_sync_dirty();
+#endif
+}
+
+static void begin_host_claim_window(void) {
+    if (!host_state_authority()) {
+        host_claim_pending = false;
+        return;
+    }
+
+    host_claim_started = timer_read32();
+    host_claim_pending = true;
+#ifdef SPLIT_KEYBOARD
+    mark_host_sync_dirty();
+#endif
+}
+
+static void predict_switched_host(void) {
+    current_host = opposite_host(persisted_host());
+    begin_host_claim_window();
+}
+
+#ifdef SPLIT_KEYBOARD
+static void host_sync_slave_handler(uint8_t in_buflen, const void *in_data, uint8_t out_buflen, void *out_data) {
+    if (in_buflen < 1 || !in_data) {
+        return;
+    }
+
+    uint8_t host = *(const uint8_t *)in_data;
+    host_t synced_host = (host_t)host;
+    if (is_valid_host(synced_host)) {
+        current_host = synced_host;
+        persist_host_local(synced_host);
+    }
+}
+
+static void sync_host_to_slave(void) {
+    static host_t last_synced_host = HOST_WORK;
+
+    if (!host_state_authority()) {
+        return;
+    }
+
+    if (!host_sync_dirty && last_synced_host == current_host) {
+        return;
+    }
+
+    if (timer_elapsed32(host_sync_last) < HOST_SYNC_RETRY_MS) {
+        return;
+    }
+
+    uint8_t host = (uint8_t)current_host;
+    host_sync_last = timer_read32();
+
+    if (transaction_rpc_send(HOST_SYNC, sizeof(host), &host)) {
+        last_synced_host = current_host;
+        host_sync_dirty = false;
+    }
+}
+#endif
+
+void eeconfig_init_user(void) {
+    eeconfig_update_user(HOST_EEPROM_MAGIC | (uint8_t)HOST_WORK);
+}
+
+void keyboard_post_init_user(void) {
+#ifdef SPLIT_KEYBOARD
+    transaction_register_rpc(HOST_SYNC, host_sync_slave_handler);
+#endif
+    predict_switched_host();
+}
+
+void suspend_wakeup_init_user(void) {
+    predict_switched_host();
+}
+
+void housekeeping_task_user(void) {
+    if (host_state_authority() && host_claim_pending && timer_elapsed32(host_claim_started) > HOST_CLAIM_TIMEOUT_MS) {
+        set_current_host(HOST_WORK);
+        host_claim_pending = false;
+    }
+
+#ifdef SPLIT_KEYBOARD
+    sync_host_to_slave();
+#endif
+}
+
+void raw_hid_receive(uint8_t *data, uint8_t length) {
+    if (length >= 3 && data[0] == HOST_MAGIC && data[1] == HOST_MSG_CLAIM && data[2] == HOST_ID_PERSONAL) {
+        set_current_host(HOST_PERSONAL);
+        host_claim_pending = false;
+    }
+}
+
+#ifdef OLED_ENABLE
+static void oled_write_host_label(void) {
+    bool narrow = oled_max_chars() < 12;
+
+    switch (current_host) {
+        case HOST_PERSONAL:
+            if (narrow) {
+                oled_write_ln_P(PSTR("Perso"), false);
+                oled_write_ln_P(PSTR("nal"), false);
+                oled_write_ln_P(PSTR("Mac"), false);
+            } else {
+                oled_write_ln_P(PSTR("Personal Mac"), false);
+            }
+            break;
+        case HOST_WORK:
+            if (narrow) {
+                oled_write_ln_P(PSTR("Work"), false);
+                oled_write_ln_P(PSTR("Mac"), false);
+            } else {
+                oled_write_ln_P(PSTR("Work Mac"), false);
+            }
+            break;
+        default:
+            if (narrow) {
+                oled_write_ln_P(PSTR("Work"), false);
+                oled_write_ln_P(PSTR("Mac"), false);
+            } else {
+                oled_write_ln_P(PSTR("Work Mac"), false);
+            }
+            break;
+    }
+}
+
+bool oled_task_user(void) {
+    if (is_keyboard_master()) {
+        return true;
+    }
+
+    oled_clear();
+    oled_set_cursor(0, 0);
+    oled_write_host_label();
+    return false;
+}
+#endif
 
 // Define combo events
 enum combo_events {

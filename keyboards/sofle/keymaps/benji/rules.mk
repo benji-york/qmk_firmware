@@ -1,2 +1,4 @@
 TRI_LAYER_ENABLE = yes
 COMBO_ENABLE = yes
+OLED_ENABLE = yes
+RAW_ENABLE = yes
