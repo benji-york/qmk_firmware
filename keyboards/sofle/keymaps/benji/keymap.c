@@ -193,34 +193,19 @@ void raw_hid_receive(uint8_t *data, uint8_t length) {
 }
 
 #ifdef OLED_ENABLE
-static void oled_write_host_label(void) {
-    bool narrow = oled_max_chars() < 12;
+oled_rotation_t oled_init_user(oled_rotation_t rotation) {
+    return OLED_ROTATION_270;
+}
 
+static void oled_write_host_label(void) {
     switch (current_host) {
         case HOST_PERSONAL:
-            if (narrow) {
-                oled_write_ln_P(PSTR("Perso"), false);
-                oled_write_ln_P(PSTR("nal"), false);
-                oled_write_ln_P(PSTR("Mac"), false);
-            } else {
-                oled_write_ln_P(PSTR("Personal Mac"), false);
-            }
+            oled_write_ln_P(PSTR("<---"), false);
             break;
         case HOST_WORK:
-            if (narrow) {
-                oled_write_ln_P(PSTR("Work"), false);
-                oled_write_ln_P(PSTR("Mac"), false);
-            } else {
-                oled_write_ln_P(PSTR("Work Mac"), false);
-            }
+            oled_write_ln_P(PSTR("--->"), false);
             break;
         default:
-            if (narrow) {
-                oled_write_ln_P(PSTR("Work"), false);
-                oled_write_ln_P(PSTR("Mac"), false);
-            } else {
-                oled_write_ln_P(PSTR("Work Mac"), false);
-            }
             break;
     }
 }
