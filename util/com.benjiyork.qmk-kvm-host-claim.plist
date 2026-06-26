@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+    "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.benjiyork.qmk-kvm-host-claim</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/benji/qmk_firmware/.venv-qmk-kvm-host-claim/bin/python</string>
+        <string>/Users/benji/qmk_firmware/util/qmk_kvm_host_claim.py</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/qmk-kvm-host-claim.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/tmp/qmk-kvm-host-claim.err</string>
+</dict>
+</plist>
