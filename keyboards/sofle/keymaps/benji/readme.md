@@ -16,16 +16,14 @@ Features:
 
 ## Two-Mac KVM host labeling
 
-The offhand OLED displays one of two states:
+The offhand OLED starts blank while the host is unknown, then displays one of two states:
 
 ```text
-Personal Mac
-Work Mac
+<---
+--->
 ```
 
-On boot, USB reconnect, or USB wake, the keyboard reads the last persisted host from EEPROM and immediately predicts the opposite host, which matches a normal KVM switch. It then starts a hidden 2500 ms correction window: if the personal Mac helper sends the Raw HID claim packet, the OLED switches to `Personal Mac` and persists that state; if no personal claim arrives, the OLED switches to `Work Mac` and persists that state. A late personal claim still switches the OLED to `Personal Mac`.
-
-An EEPROM reset defaults the persisted host to `Work Mac`.
+On boot, USB reconnect, or USB wake, the keyboard clears the offhand host display and starts a 2500 ms claim window. If the personal Mac helper sends the Raw HID claim packet, the OLED shows `<---`; if no personal claim arrives before the timeout, the OLED shows `--->`. A late personal claim still switches the OLED to `<---`.
 
 The firmware defaults are:
 

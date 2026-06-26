@@ -8,19 +8,18 @@
 #endif
 
 typedef enum {
+    HOST_UNKNOWN = 0,
     HOST_PERSONAL = 1,
     HOST_WORK = 2,
 } host_t;
 
 #define HOST_CLAIM_TIMEOUT_MS 2500
 #define HOST_SYNC_RETRY_MS 100
-#define HOST_EEPROM_MAGIC 0x484F5300u
-#define HOST_EEPROM_MAGIC_MASK 0xFFFFFF00u
 #define HOST_MAGIC 0x42
 #define HOST_MSG_CLAIM 0x01
 #define HOST_ID_PERSONAL 0x01
 
-static host_t current_host = HOST_WORK;
+static host_t current_host = HOST_UNKNOWN;
 static uint32_t host_claim_started = 0;
 static bool host_claim_pending = false;
 
@@ -49,40 +48,7 @@ static void mark_host_sync_dirty(void) {
 #endif
 
 static bool is_valid_host(host_t host) {
-    return host == HOST_PERSONAL || host == HOST_WORK;
-}
-
-static host_t persisted_host(void) {
-    uint32_t raw = eeconfig_read_user();
-    if ((raw & HOST_EEPROM_MAGIC_MASK) != HOST_EEPROM_MAGIC) {
-        return HOST_WORK;
-    }
-
-    host_t host = (host_t)(raw & 0xFFu);
-    return is_valid_host(host) ? host : HOST_WORK;
-}
-
-static void persist_host_local(host_t host) {
-    if (!is_valid_host(host)) {
-        return;
-    }
-
-    uint32_t raw = HOST_EEPROM_MAGIC | (uint8_t)host;
-    if (eeconfig_read_user() != raw) {
-        eeconfig_update_user(raw);
-    }
-}
-
-static void persist_host(host_t host) {
-    if (!host_state_authority()) {
-        return;
-    }
-
-    persist_host_local(host);
-}
-
-static host_t opposite_host(host_t host) {
-    return host == HOST_PERSONAL ? HOST_WORK : HOST_PERSONAL;
+    return host == HOST_UNKNOWN || host == HOST_PERSONAL || host == HOST_WORK;
 }
 
 static void set_current_host(host_t host) {
@@ -90,19 +56,15 @@ static void set_current_host(host_t host) {
         return;
     }
 
-    if (current_host == host) {
-        persist_host(host);
-        return;
-    }
-
     current_host = host;
-    persist_host(host);
 #ifdef SPLIT_KEYBOARD
     mark_host_sync_dirty();
 #endif
 }
 
 static void begin_host_claim_window(void) {
+    set_current_host(HOST_UNKNOWN);
+
     if (!host_state_authority()) {
         host_claim_pending = false;
         return;
@@ -110,14 +72,6 @@ static void begin_host_claim_window(void) {
 
     host_claim_started = timer_read32();
     host_claim_pending = true;
-#ifdef SPLIT_KEYBOARD
-    mark_host_sync_dirty();
-#endif
-}
-
-static void predict_switched_host(void) {
-    current_host = opposite_host(persisted_host());
-    begin_host_claim_window();
 }
 
 #ifdef SPLIT_KEYBOARD
@@ -130,12 +84,11 @@ static void host_sync_slave_handler(uint8_t in_buflen, const void *in_data, uint
     host_t synced_host = (host_t)host;
     if (is_valid_host(synced_host)) {
         current_host = synced_host;
-        persist_host_local(synced_host);
     }
 }
 
 static void sync_host_to_slave(void) {
-    static host_t last_synced_host = HOST_WORK;
+    static host_t last_synced_host = HOST_UNKNOWN;
 
     if (!host_state_authority()) {
         return;
@@ -159,19 +112,15 @@ static void sync_host_to_slave(void) {
 }
 #endif
 
-void eeconfig_init_user(void) {
-    eeconfig_update_user(HOST_EEPROM_MAGIC | (uint8_t)HOST_WORK);
-}
-
 void keyboard_post_init_user(void) {
 #ifdef SPLIT_KEYBOARD
     transaction_register_rpc(HOST_SYNC, host_sync_slave_handler);
 #endif
-    predict_switched_host();
+    begin_host_claim_window();
 }
 
 void suspend_wakeup_init_user(void) {
-    predict_switched_host();
+    begin_host_claim_window();
 }
 
 void housekeeping_task_user(void) {
