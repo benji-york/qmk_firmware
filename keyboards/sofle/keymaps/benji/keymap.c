@@ -205,6 +205,8 @@ enum custom_keycodes {
     DH_SWITCH
 };
 
+#define DESKHOP_HOTKEY_TAP_MS 20
+
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 [_DEFAULT_LAYER] = LAYOUT(
            KC_GRV,    KC_1,    KC_2,    KC_3,          KC_4,            KC_5,                             KC_6,           KC_7,    KC_8,    KC_9,    KC_0,  KC_MINUS,
@@ -243,38 +245,44 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
    )
 };
 
+static void tap_deskhop_hotkey(uint8_t mods, uint8_t key1, uint8_t key2) {
+    uint8_t saved_weak_mods = get_weak_mods();
+
+    set_weak_mods(saved_weak_mods | mods);
+    add_key(key1);
+    if (key2 != KC_NO) {
+        add_key(key2);
+    }
+    send_keyboard_report();
+
+    wait_ms(DESKHOP_HOTKEY_TAP_MS);
+
+    if (key2 != KC_NO) {
+        del_key(key2);
+    }
+    del_key(key1);
+    set_weak_mods(saved_weak_mods);
+    send_keyboard_report();
+}
+
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     switch (keycode) {
         case DH_CONFIG:
             if (record->event.pressed) {
                 // DeskHop configuration mode: Left Control + Right Shift + C + O.
-                register_mods(MOD_LCTL | MOD_RSFT);
-                register_code(KC_C);
-                register_code(KC_O);
-            } else {
-                unregister_code(KC_O);
-                unregister_code(KC_C);
-                unregister_mods(MOD_LCTL | MOD_RSFT);
+                tap_deskhop_hotkey(MOD_BIT_LCTRL | MOD_BIT_RSHIFT, KC_C, KC_O);
             }
             return false;
         case DH_JITTER:
             if (record->event.pressed) {
                 // Enable DeskHop jitter mode: Left Control + Right Shift + J.
-                register_mods(MOD_LCTL | MOD_RSFT);
-                register_code(KC_J);
-            } else {
-                unregister_code(KC_J);
-                unregister_mods(MOD_LCTL | MOD_RSFT);
+                tap_deskhop_hotkey(MOD_BIT_LCTRL | MOD_BIT_RSHIFT, KC_J, KC_NO);
             }
             return false;
         case DH_SWITCH:
             if (record->event.pressed) {
                 // Switch DeskHop outputs: Left Control + Caps Lock.
-                register_mods(MOD_LCTL);
-                register_code(KC_CAPS);
-            } else {
-                unregister_code(KC_CAPS);
-                unregister_mods(MOD_LCTL);
+                tap_deskhop_hotkey(MOD_BIT_LCTRL, KC_CAPS, KC_NO);
             }
             return false;
         case KC_PRVWD:
