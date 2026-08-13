@@ -200,7 +200,9 @@ enum custom_keycodes {
     KC_NXTWD,
     KC_LSTRT,
     KC_LEND,
-    DH_CONFIG
+    DH_CONFIG,
+    DH_JITTER,
+    DH_SWITCH
 };
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
@@ -228,7 +230,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 [_F3_LAYER] = LAYOUT(
   _______, _______, _______,   KC_F3, _______, _______,                       _______, _______, _______, _______, _______, _______,
   _______, _______, _______, _______, _______, _______,                       _______, _______, _______, _______, _______, _______,
-  _______, _______, _______, _______, _______, _______,                       _______, _______, _______, _______, _______, _______,
+  _______, _______, DH_SWITCH, _______, _______, _______,                     _______, DH_JITTER, _______, _______, _______, _______,
   _______, _______, _______, DH_CONFIG, _______, _______, _______,  _______, _______, _______, _______, _______, _______, _______,
                     _______, _______, _______, _______, _______,     _______, _______, _______, _______, _______
  ),
@@ -253,6 +255,26 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 unregister_code(KC_O);
                 unregister_code(KC_C);
                 unregister_mods(MOD_LCTL | MOD_RSFT);
+            }
+            return false;
+        case DH_JITTER:
+            if (record->event.pressed) {
+                // Enable DeskHop jitter mode: Left Control + Right Shift + J.
+                register_mods(MOD_LCTL | MOD_RSFT);
+                register_code(KC_J);
+            } else {
+                unregister_code(KC_J);
+                unregister_mods(MOD_LCTL | MOD_RSFT);
+            }
+            return false;
+        case DH_SWITCH:
+            if (record->event.pressed) {
+                // Switch DeskHop outputs: Left Control + Caps Lock.
+                register_mods(MOD_LCTL);
+                register_code(KC_CAPS);
+            } else {
+                unregister_code(KC_CAPS);
+                unregister_mods(MOD_LCTL);
             }
             return false;
         case KC_PRVWD:
