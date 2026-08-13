@@ -240,6 +240,9 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   _______, _______, _______, _______, _______, _______, _______,     _______, _______, _______, _______, _______, _______, _______,
                     _______, _______, _______, _______, _______,     _______, _______, _______, _______, _______
  ),
+// DeskHop control layer: A/B=boot boards, S=switch, D x3=wipe, G=gaming,
+// J=jitter, L=lock both, X=disable screensaver, C=config, Y=calibrate.
+// Hold TL_UPPR + TL_LOWR to reach this layer. See readme.md for details.
 [_F3_LAYER] = LAYOUT(
   _______, _______, _______,   KC_F3, _______, _______,                       _______, _______, _______, _______, _______, _______,
   _______, _______, _______, _______, _______, _______,                       DH_CALIBRATE, _______, _______, _______, _______, _______,
