@@ -12,6 +12,7 @@ DEFAULT_VENDOR_ID = 0xFC32
 DEFAULT_PRODUCT_ID = 0x0287
 DEFAULT_USAGE_PAGE = 0xFF60
 DEFAULT_USAGE = 0x61
+DEFAULT_CLAIM_INTERVAL = 2.0
 
 HOST_MAGIC = 0x42
 HOST_MSG_CLAIM = 0x01
@@ -173,21 +174,30 @@ def claim_once(filter_: HidFilter, with_report_id: bool, verbose: bool) -> int:
     return 0
 
 
-def monitor(filter_: HidFilter, with_report_id: bool, poll_interval: float, verbose: bool) -> int:
+def monitor(filter_: HidFilter, with_report_id: bool, poll_interval: float, claim_interval: float, verbose: bool) -> int:
     claimed_path = None
+    last_claimed_at = 0.0
 
     while True:
         path = find_raw_hid_path(filter_)
+        now = time.time()
 
         if path is None:
             if verbose and claimed_path is not None:
-                print("Raw HID interface disappeared.")
+                print("Raw HID interface disappeared.", flush=True)
             claimed_path = None
+            last_claimed_at = 0.0
         elif path != claimed_path:
             if verbose:
-                print(f"Sending personal host claim to {decoded_path(path)!r}.")
+                print(f"Sending personal host claim to {decoded_path(path)!r}.", flush=True)
             send_claim_burst(path, with_report_id)
             claimed_path = path
+            last_claimed_at = time.time()
+        elif now - last_claimed_at >= claim_interval:
+            if verbose:
+                print(f"Reasserting personal host claim to {decoded_path(path)!r}.", flush=True)
+            send_claim_burst(path, with_report_id)
+            last_claimed_at = time.time()
 
         time.sleep(poll_interval)
 
@@ -199,6 +209,7 @@ def main() -> int:
     parser.add_argument("--usage-page", type=parse_int, default=DEFAULT_USAGE_PAGE)
     parser.add_argument("--usage", type=parse_int, default=DEFAULT_USAGE)
     parser.add_argument("--poll-interval", type=float, default=1.0)
+    parser.add_argument("--claim-interval", type=float, default=DEFAULT_CLAIM_INTERVAL)
     parser.add_argument("--payload-only", action="store_true", help="omit the leading 0x00 report ID byte")
     parser.add_argument("--once", action="store_true", help="scan once, send one burst if the keyboard is present, then exit")
     parser.add_argument("--list", action="store_true", help="list HID interfaces for the configured VID/PID and exit")
@@ -208,6 +219,8 @@ def main() -> int:
 
     if args.poll_interval <= 0:
         parser.error("--poll-interval must be positive")
+    if args.claim_interval <= 0:
+        parser.error("--claim-interval must be positive")
 
     filter_ = HidFilter(
         vendor_id=args.vendor_id,
@@ -228,6 +241,7 @@ def main() -> int:
         filter_=filter_,
         with_report_id=with_report_id,
         poll_interval=args.poll_interval,
+        claim_interval=args.claim_interval,
         verbose=args.verbose,
     )
 

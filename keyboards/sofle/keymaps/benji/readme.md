@@ -25,6 +25,8 @@ The offhand OLED starts blank while the host is unknown, then displays one of tw
 
 On boot, USB reconnect, or USB wake, the keyboard clears the offhand host display and starts a 2500 ms claim window. If the personal Mac helper sends the Raw HID claim packet, the OLED shows `<---`; if no personal claim arrives before the timeout, the OLED shows `--->`. A late personal claim still switches the OLED to `<---`.
 
+The personal Mac helper sends a claim when the Raw HID interface appears and periodically reasserts it while the keyboard remains attached, so macOS sleep/wake does not depend on detecting a USB path change.
+
 The firmware defaults are:
 
 - Vendor ID: `0xFC32`
