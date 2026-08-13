@@ -213,6 +213,10 @@ enum custom_keycodes {
 };
 
 #define DESKHOP_HOTKEY_TAP_MS 20
+#define DESKHOP_WIPE_TAP_TIMEOUT_MS 1000
+
+static uint8_t deskhop_wipe_tap_count;
+static uint32_t deskhop_wipe_last_tap;
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 [_DEFAULT_LAYER] = LAYOUT(
@@ -272,7 +276,26 @@ static void tap_deskhop_hotkey(uint8_t mods, uint8_t key1, uint8_t key2) {
     send_keyboard_report();
 }
 
+static void register_deskhop_wipe_tap(void) {
+    if (deskhop_wipe_tap_count != 0 && timer_elapsed32(deskhop_wipe_last_tap) > DESKHOP_WIPE_TAP_TIMEOUT_MS) {
+        deskhop_wipe_tap_count = 0;
+    }
+
+    deskhop_wipe_last_tap = timer_read32();
+    deskhop_wipe_tap_count++;
+
+    if (deskhop_wipe_tap_count == 3) {
+        deskhop_wipe_tap_count = 0;
+        tap_deskhop_hotkey(MOD_BIT_RSHIFT, KC_F12, KC_D);
+    }
+}
+
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+    // Require three uninterrupted D taps before erasing DeskHop's saved configuration.
+    if (record->event.pressed && keycode != DH_WIPE) {
+        deskhop_wipe_tap_count = 0;
+    }
+
     switch (keycode) {
         case DH_CONFIG:
             if (record->event.pressed) {
@@ -312,8 +335,8 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             return false;
         case DH_WIPE:
             if (record->event.pressed) {
-                // Erase DeskHop configuration: Right Shift + F12 + D.
-                tap_deskhop_hotkey(MOD_BIT_RSHIFT, KC_F12, KC_D);
+                // Erase DeskHop configuration after three D taps.
+                register_deskhop_wipe_tap();
             }
             return false;
         case DH_BOOT_A:
