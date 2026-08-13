@@ -202,7 +202,14 @@ enum custom_keycodes {
     KC_LEND,
     DH_CONFIG,
     DH_JITTER,
-    DH_SWITCH
+    DH_SWITCH,
+    DH_DISABLE,
+    DH_GAMING,
+    DH_CALIBRATE,
+    DH_WIPE,
+    DH_BOOT_A,
+    DH_BOOT_B,
+    DH_LOCK
 };
 
 #define DESKHOP_HOTKEY_TAP_MS 20
@@ -231,9 +238,9 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
  ),
 [_F3_LAYER] = LAYOUT(
   _______, _______, _______,   KC_F3, _______, _______,                       _______, _______, _______, _______, _______, _______,
-  _______, _______, _______, _______, _______, _______,                       _______, _______, _______, _______, _______, _______,
-  _______, _______, DH_SWITCH, _______, _______, _______,                     _______, DH_JITTER, _______, _______, _______, _______,
-  _______, _______, _______, DH_CONFIG, _______, _______, _______,  _______, _______, _______, _______, _______, _______, _______,
+  _______, _______, _______, _______, _______, _______,                       DH_CALIBRATE, _______, _______, _______, _______, _______,
+  _______, DH_BOOT_A, DH_SWITCH, DH_WIPE, _______, DH_GAMING,                 _______, DH_JITTER, _______, DH_LOCK, _______, _______,
+  _______, _______, DH_DISABLE, DH_CONFIG, _______, DH_BOOT_B, _______,  _______, _______, _______, _______, _______, _______, _______,
                     _______, _______, _______, _______, _______,     _______, _______, _______, _______, _______
  ),
 [_UNUSED_LAYER] = LAYOUT(
@@ -283,6 +290,48 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             if (record->event.pressed) {
                 // Switch DeskHop outputs: Left Control + Caps Lock.
                 tap_deskhop_hotkey(MOD_BIT_LCTRL, KC_CAPS, KC_NO);
+            }
+            return false;
+        case DH_DISABLE:
+            if (record->event.pressed) {
+                // Disable DeskHop screensaver mode: Left Control + Right Shift + X.
+                tap_deskhop_hotkey(MOD_BIT_LCTRL | MOD_BIT_RSHIFT, KC_X, KC_NO);
+            }
+            return false;
+        case DH_GAMING:
+            if (record->event.pressed) {
+                // Toggle DeskHop gaming mode: Left Control + Right Shift + G.
+                tap_deskhop_hotkey(MOD_BIT_LCTRL | MOD_BIT_RSHIFT, KC_G, KC_NO);
+            }
+            return false;
+        case DH_CALIBRATE:
+            if (record->event.pressed) {
+                // Save DeskHop cursor-height calibration: Right Shift + F12 + Y.
+                tap_deskhop_hotkey(MOD_BIT_RSHIFT, KC_F12, KC_Y);
+            }
+            return false;
+        case DH_WIPE:
+            if (record->event.pressed) {
+                // Erase DeskHop configuration: Right Shift + F12 + D.
+                tap_deskhop_hotkey(MOD_BIT_RSHIFT, KC_F12, KC_D);
+            }
+            return false;
+        case DH_BOOT_A:
+            if (record->event.pressed) {
+                // Put DeskHop board A in bootloader mode: both Shifts + F12 + A.
+                tap_deskhop_hotkey(MOD_BIT_LSHIFT | MOD_BIT_RSHIFT, KC_F12, KC_A);
+            }
+            return false;
+        case DH_BOOT_B:
+            if (record->event.pressed) {
+                // Put DeskHop board B in bootloader mode: both Shifts + F12 + B.
+                tap_deskhop_hotkey(MOD_BIT_LSHIFT | MOD_BIT_RSHIFT, KC_F12, KC_B);
+            }
+            return false;
+        case DH_LOCK:
+            if (record->event.pressed) {
+                // Lock both DeskHop outputs: Right Control + L.
+                tap_deskhop_hotkey(MOD_BIT_RCTRL, KC_L, KC_NO);
             }
             return false;
         case KC_PRVWD:
