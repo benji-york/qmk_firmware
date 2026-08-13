@@ -199,7 +199,8 @@ enum custom_keycodes {
     KC_PRVWD = QK_USER,
     KC_NXTWD,
     KC_LSTRT,
-    KC_LEND
+    KC_LEND,
+    DH_CONFIG
 };
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
@@ -228,7 +229,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   _______, _______, _______,   KC_F3, _______, _______,                       _______, _______, _______, _______, _______, _______,
   _______, _______, _______, _______, _______, _______,                       _______, _______, _______, _______, _______, _______,
   _______, _______, _______, _______, _______, _______,                       _______, _______, _______, _______, _______, _______,
-  _______, _______, _______, _______, _______, _______, _______,     _______, _______, _______, _______, _______, _______, _______,
+  _______, _______, _______, DH_CONFIG, _______, _______, _______,  _______, _______, _______, _______, _______, _______, _______,
                     _______, _______, _______, _______, _______,     _______, _______, _______, _______, _______
  ),
 [_UNUSED_LAYER] = LAYOUT(
@@ -242,6 +243,18 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     switch (keycode) {
+        case DH_CONFIG:
+            if (record->event.pressed) {
+                // DeskHop configuration mode: Left Control + Right Shift + C + O.
+                register_mods(MOD_LCTL | MOD_RSFT);
+                register_code(KC_C);
+                register_code(KC_O);
+            } else {
+                unregister_code(KC_O);
+                unregister_code(KC_C);
+                unregister_mods(MOD_LCTL | MOD_RSFT);
+            }
+            return false;
         case KC_PRVWD:
             if (record->event.pressed) {
                 if (keymap_config.swap_lctl_lgui) {

@@ -10,6 +10,7 @@ Features:
 - Symmetric modifiers (CMD/Super, Alt/Opt, Ctrl, Shift)
 - J+K combo for Escape.
 - Tri-layer navigation and symbol layers.
+- Hold both tri-layer thumb keys and tap C to enter DeskHop configuration mode.
 - The OLED on the master half shows layer/key-position status.
 - The OLED on the offhand half shows QMK Raw HID host labeling for a two-Mac KVM.
 - Left encoder controls volume up/down/mute. Right encoder PGUP/PGDOWN.
