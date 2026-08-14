@@ -12,7 +12,7 @@ Features:
 - Tri-layer navigation and symbol layers.
 - A dedicated Layer 3 provides DeskHop controls.
 - The OLED on the master half shows layer/key-position status.
-- The OLED on the offhand half shows QMK Raw HID host labeling for a two-Mac KVM.
+- The OLED on the offhand half shows DeskHop LED/Raw HID host labeling for a two-Mac KVM.
 - Left encoder controls volume up/down/mute. Right encoder PGUP/PGDOWN.
 
 ## DeskHop controls (Layer 3)
@@ -57,7 +57,34 @@ The offhand OLED starts blank while the host is unknown, then displays one of tw
 --->
 ```
 
-On boot, USB reconnect, or USB wake, the keyboard clears the offhand host display and starts a 2500 ms claim window. If the personal Mac helper sends the Raw HID claim packet, the OLED shows `<---`; if no personal claim arrives before the timeout, the OLED shows `--->`. A late personal claim still switches the OLED to `<---`.
+With `DESKHOP_LED_FOCUS_ENABLE`, the firmware treats DeskHop's keyboard LED
+status indicator as the primary focus signal:
+
+| DeskHop output | Caps Lock LED | Offhand OLED |
+| --- | --- | --- |
+| A | Off | `<---` |
+| B | On | `--->` |
+
+The USB/master half observes the Caps Lock bit through QMK's standard LED
+callback. A new value must remain unchanged for 250 ms before it changes the
+host label. DeskHop's acknowledgement sequence alternates the keyboard LEDs
+much faster than that, so acknowledged hotkeys do not make the arrows flicker
+or temporarily point at the wrong computer. The accepted host label is sent to
+the offhand half through the existing custom split transaction.
+
+Raw HID remains available alongside the LED signal. On boot or USB reconnect,
+the keyboard clears the offhand display and starts the existing 2500 ms claim
+window. Until the first stable DeskHop LED state arrives, the personal Mac
+helper can claim `<---`; if neither signal arrives, the timeout falls back to
+`--->`. Once a stable LED state is accepted, it is authoritative for that USB
+session and later Raw HID claims are ignored. Suspend's synthetic all-off LED
+update is ignored, and a previously established LED state is sampled again on
+wake.
+
+DeskHop's indicator mode repurposes Caps Lock, so the keyboard cannot
+distinguish that signal from ordinary Caps Lock when plugged directly into a
+computer. Remove `DESKHOP_LED_FOCUS_ENABLE` from `config.h` for a firmware build
+intended to use only the Raw HID host-labeling scheme.
 
 The personal Mac helper sends a claim when the Raw HID interface appears and periodically reasserts it while the keyboard remains attached, so macOS sleep/wake does not depend on detecting a USB path change.
 

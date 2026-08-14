@@ -19,9 +19,27 @@ typedef enum {
 #define HOST_MSG_CLAIM 0x01
 #define HOST_ID_PERSONAL 0x01
 
+#ifdef DESKHOP_LED_FOCUS_ENABLE
+#    define DESKHOP_LED_SETTLE_MS 250
+#    define DESKHOP_OUTPUT_A_HOST HOST_PERSONAL
+#    define DESKHOP_OUTPUT_B_HOST HOST_WORK
+
+STATIC_ASSERT(DESKHOP_LED_SETTLE_MS < HOST_CLAIM_TIMEOUT_MS, "DeskHop LED must settle before the host fallback");
+STATIC_ASSERT(DESKHOP_OUTPUT_A_HOST != DESKHOP_OUTPUT_B_HOST, "DeskHop outputs must map to different hosts");
+#endif
+
 static host_t current_host = HOST_UNKNOWN;
 static uint32_t host_claim_started = 0;
 static bool host_claim_pending = false;
+
+#ifdef DESKHOP_LED_FOCUS_ENABLE
+static bool deskhop_led_suspended = false;
+static bool deskhop_led_authoritative = false;
+static bool deskhop_led_stable_caps = false;
+static bool deskhop_led_candidate_valid = false;
+static bool deskhop_led_candidate_caps = false;
+static uint32_t deskhop_led_candidate_started = 0;
+#endif
 
 #ifdef SPLIT_KEYBOARD
 static bool host_sync_dirty = true;
@@ -62,7 +80,53 @@ static void set_current_host(host_t host) {
 #endif
 }
 
+#ifdef DESKHOP_LED_FOCUS_ENABLE
+static void reset_deskhop_led_focus(void) {
+    deskhop_led_authoritative = false;
+    deskhop_led_stable_caps = false;
+    deskhop_led_candidate_valid = false;
+    deskhop_led_candidate_caps = false;
+    deskhop_led_candidate_started = 0;
+}
+
+static void observe_deskhop_led_focus(bool caps_lock) {
+    if (!host_state_authority() || deskhop_led_suspended) {
+        return;
+    }
+
+    if (deskhop_led_authoritative && caps_lock == deskhop_led_stable_caps) {
+        deskhop_led_candidate_valid = false;
+        return;
+    }
+
+    if (deskhop_led_candidate_valid && caps_lock == deskhop_led_candidate_caps) {
+        return;
+    }
+
+    deskhop_led_candidate_caps = caps_lock;
+    deskhop_led_candidate_started = timer_read32();
+    deskhop_led_candidate_valid = true;
+}
+
+static void commit_deskhop_led_focus_if_settled(void) {
+    if (!host_state_authority() || deskhop_led_suspended || !deskhop_led_candidate_valid ||
+        timer_elapsed32(deskhop_led_candidate_started) < DESKHOP_LED_SETTLE_MS) {
+        return;
+    }
+
+    deskhop_led_stable_caps = deskhop_led_candidate_caps;
+    deskhop_led_authoritative = true;
+    deskhop_led_candidate_valid = false;
+    host_claim_pending = false;
+
+    set_current_host(deskhop_led_stable_caps ? DESKHOP_OUTPUT_B_HOST : DESKHOP_OUTPUT_A_HOST);
+}
+#endif
+
 static void begin_host_claim_window(void) {
+#ifdef DESKHOP_LED_FOCUS_ENABLE
+    reset_deskhop_led_focus();
+#endif
     set_current_host(HOST_UNKNOWN);
 
     if (!host_state_authority()) {
@@ -119,11 +183,40 @@ void keyboard_post_init_user(void) {
     begin_host_claim_window();
 }
 
+void suspend_power_down_user(void) {
+#ifdef DESKHOP_LED_FOCUS_ENABLE
+    deskhop_led_suspended = true;
+    deskhop_led_candidate_valid = false;
+#endif
+}
+
 void suspend_wakeup_init_user(void) {
+#ifdef DESKHOP_LED_FOCUS_ENABLE
+    bool resume_deskhop_led_focus = deskhop_led_authoritative;
+    deskhop_led_suspended = false;
+#endif
+
     begin_host_claim_window();
+
+#ifdef DESKHOP_LED_FOCUS_ENABLE
+    if (resume_deskhop_led_focus) {
+        observe_deskhop_led_focus(host_keyboard_led_state().caps_lock);
+    }
+#endif
+}
+
+bool led_update_user(led_t led_state) {
+#ifdef DESKHOP_LED_FOCUS_ENABLE
+    observe_deskhop_led_focus(led_state.caps_lock);
+#endif
+    return true;
 }
 
 void housekeeping_task_user(void) {
+#ifdef DESKHOP_LED_FOCUS_ENABLE
+    commit_deskhop_led_focus_if_settled();
+#endif
+
     if (host_state_authority() && host_claim_pending && timer_elapsed32(host_claim_started) > HOST_CLAIM_TIMEOUT_MS) {
         set_current_host(HOST_WORK);
         host_claim_pending = false;
@@ -135,10 +228,18 @@ void housekeeping_task_user(void) {
 }
 
 void raw_hid_receive(uint8_t *data, uint8_t length) {
-    if (length >= 3 && data[0] == HOST_MAGIC && data[1] == HOST_MSG_CLAIM && data[2] == HOST_ID_PERSONAL) {
-        set_current_host(HOST_PERSONAL);
-        host_claim_pending = false;
+    if (!host_state_authority() || length < 3 || data[0] != HOST_MAGIC || data[1] != HOST_MSG_CLAIM || data[2] != HOST_ID_PERSONAL) {
+        return;
     }
+
+#ifdef DESKHOP_LED_FOCUS_ENABLE
+    if (deskhop_led_authoritative) {
+        return;
+    }
+#endif
+
+    set_current_host(HOST_PERSONAL);
+    host_claim_pending = false;
 }
 
 #ifdef OLED_ENABLE
