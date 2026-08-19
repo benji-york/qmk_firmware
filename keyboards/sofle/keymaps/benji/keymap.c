@@ -415,8 +415,8 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             return false;
         case DH_SWITCH:
             if (record->event.pressed) {
-                // Switch DeskHop outputs: Left Control + Caps Lock.
-                tap_deskhop_hotkey(MOD_BIT_LCTRL, KC_CAPS, KC_NO);
+                // Switch DeskHop outputs with an otherwise inert bare key.
+                tap_deskhop_hotkey(0, KC_F24, KC_NO);
             }
             return false;
         case DH_DISABLE:

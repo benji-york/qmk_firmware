@@ -19,8 +19,9 @@ Features:
 
 Hold both tri-layer thumb keys (`TL_UPPR` + `TL_LOWR`) to activate Layer 3,
 then tap the physical letter key shown below. QMK emits the corresponding
-DeskHop chord as one complete 20 ms HID report so partial modifiers do not
-reach macOS or Karabiner-Elements.
+DeskHop key or chord as one complete 20 ms HID report so partial modifiers do
+not reach macOS or Karabiner-Elements. Switching uses bare F24 so an escaped
+event cannot latch Caps Lock or a modifier.
 
 | Layer 3 key | DeskHop action | Chord emitted by QMK |
 | --- | --- | --- |
@@ -31,7 +32,7 @@ reach macOS or Karabiner-Elements.
 | `G` | Toggle gaming mode (relative mouse; edge switching disabled) | Left Control + Right Shift + G |
 | `J` | Enable jitter keep-awake mode on the selected output | Left Control + Right Shift + J |
 | `L` | Lock both computers | Right Control + L |
-| `S` | Switch between computers | Left Control + Caps Lock |
+| `S` | Switch between computers | F24 |
 | `X` | Disable jitter/Pong mode on the selected output | Left Control + Right Shift + X |
 | `Y` | Save cursor-height calibration at the current pointer position | Right Shift + F12 + Y |
 
