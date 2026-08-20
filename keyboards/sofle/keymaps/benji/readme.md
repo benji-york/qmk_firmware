@@ -32,6 +32,7 @@ event cannot latch Caps Lock or a modifier.
 | `G` | Toggle gaming mode (relative mouse; edge switching disabled) | Left Control + Right Shift + G |
 | `J` | Enable jitter keep-awake mode on the selected output | Left Control + Right Shift + J |
 | `L` | Lock both computers | Right Control + L |
+| `Q`, `Q`, `Q` | Reboot both DeskHop boards | Left Control + Right Shift + Q (three times) |
 | `S` | Switch between computers | F24 |
 | `X` | Disable jitter/Pong mode on the selected output | Left Control + Right Shift + X |
 | `Y` | Save cursor-height calibration at the current pointer position | Right Shift + F12 + Y |
@@ -41,6 +42,9 @@ Safety and behavior notes:
 - Configuration erase deliberately requires three uninterrupted Layer 3 + D
   taps. Each tap must arrive within one second of the preceding tap. Any other
   key cancels the sequence, and the first two taps send nothing to DeskHop.
+- Reboot sends one complete Left Control + Right Shift + Q chord for every
+  Layer 3 + Q tap. DeskHop requires all three completed taps within one second
+  and coordinates rebooting both boards; QMK sends every tap separately.
 - `A` and `B` reboot the corresponding **DeskHop board**, not a Sofle half.
 - `J` and `X` affect only the output selected when the command is issued.
 - `L` depends on the operating system configured for each DeskHop output. Set

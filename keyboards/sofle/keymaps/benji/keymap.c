@@ -310,7 +310,8 @@ enum custom_keycodes {
     DH_WIPE,
     DH_BOOT_A,
     DH_BOOT_B,
-    DH_LOCK
+    DH_LOCK,
+    DH_REBOOT
 };
 
 #define DESKHOP_HOTKEY_TAP_MS 20
@@ -341,12 +342,13 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   _______, _______, _______, _______, _______, _______, _______,     _______, _______, _______, _______, _______, _______, _______,
                     _______, _______, _______, _______, _______,     _______, _______, _______, _______, _______
  ),
-// DeskHop control layer: A/B=boot boards, S=switch, D x3=wipe, G=gaming,
-// J=jitter, L=lock both, X=disable screensaver, C=config, Y=calibrate.
+// DeskHop control layer: A/B=boot boards, Q x3=reboot both, S=switch,
+// D x3=wipe, G=gaming, J=jitter, L=lock both, X=disable screensaver,
+// C=config, Y=calibrate.
 // Hold TL_UPPR + TL_LOWR to reach this layer. See readme.md for details.
 [_F3_LAYER] = LAYOUT(
   _______, _______, _______,   KC_F3, _______, _______,                       _______, _______, _______, _______, _______, _______,
-  _______, _______, _______, _______, _______, _______,                       DH_CALIBRATE, _______, _______, _______, _______, _______,
+  _______, DH_REBOOT, _______, _______, _______, _______,                     DH_CALIBRATE, _______, _______, _______, _______, _______,
   _______, DH_BOOT_A, DH_SWITCH, DH_WIPE, _______, DH_GAMING,                 _______, DH_JITTER, _______, DH_LOCK, _______, _______,
   _______, _______, DH_DISABLE, DH_CONFIG, _______, DH_BOOT_B, _______,  _______, _______, _______, _______, _______, _______, _______,
                     _______, _______, _______, _______, _______,     _______, _______, _______, _______, _______
@@ -459,6 +461,12 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             if (record->event.pressed) {
                 // Lock both DeskHop outputs: Right Control + L.
                 tap_deskhop_hotkey(MOD_BIT_RCTRL, KC_L, KC_NO);
+            }
+            return false;
+        case DH_REBOOT:
+            if (record->event.pressed) {
+                // Send one reboot-sequence tap; DeskHop reboots both boards after three.
+                tap_deskhop_hotkey(MOD_BIT_LCTRL | MOD_BIT_RSHIFT, KC_Q, KC_NO);
             }
             return false;
         case KC_PRVWD:
