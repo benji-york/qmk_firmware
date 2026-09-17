@@ -311,7 +311,8 @@ enum custom_keycodes {
     DH_BOOT_A,
     DH_BOOT_B,
     DH_LOCK,
-    DH_REBOOT
+    DH_REBOOT,
+    DH_PASTE
 };
 
 #define DESKHOP_HOTKEY_TAP_MS 20
@@ -344,13 +345,13 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
  ),
 // DeskHop control layer: A/B=boot boards, Q x3=reboot both, S=switch,
 // D x3=wipe, G=gaming, J=jitter, L=lock both, X=disable screensaver,
-// C=config, Y=calibrate.
+// C=config, Y=calibrate, V=type the opposite Mac clipboard on the focused Mac.
 // Hold TL_UPPR + TL_LOWR to reach this layer. See readme.md for details.
 [_F3_LAYER] = LAYOUT(
   _______, _______, _______,   KC_F3, _______, _______,                       _______, _______, _______, _______, _______, _______,
   _______, DH_REBOOT, _______, _______, _______, _______,                     DH_CALIBRATE, _______, _______, _______, _______, _______,
   _______, DH_BOOT_A, DH_SWITCH, DH_WIPE, _______, DH_GAMING,                 _______, DH_JITTER, _______, DH_LOCK, _______, _______,
-  _______, _______, DH_DISABLE, DH_CONFIG, _______, DH_BOOT_B, _______,  _______, _______, _______, _______, _______, _______, _______,
+  _______, _______, DH_DISABLE, DH_CONFIG, DH_PASTE, DH_BOOT_B, _______,  _______, _______, _______, _______, _______, _______, _______,
                     _______, _______, _______, _______, _______,     _______, _______, _______, _______, _______
  ),
 [_UNUSED_LAYER] = LAYOUT(
@@ -403,6 +404,17 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     }
 
     switch (keycode) {
+        case DH_PASTE:
+            // Exact bare F23 is consumed by DeskHop on either focused Mac.
+            // Keep the HID key down until this physical key is released: the
+            // clipboard feature must never mistake the 20 ms tap helper for
+            // physical release. Invoke without other keys/modifiers held.
+            if (record->event.pressed) {
+                register_code(KC_F23);
+            } else {
+                unregister_code(KC_F23);
+            }
+            return false;
         case DH_CONFIG:
             if (record->event.pressed) {
                 // DeskHop configuration mode: Left Control + Right Shift + C + O.

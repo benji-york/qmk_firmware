@@ -19,7 +19,8 @@ Features:
 
 Hold both tri-layer thumb keys (`TL_UPPR` + `TL_LOWR`) to activate Layer 3,
 then tap the physical letter key shown below. QMK emits the corresponding
-DeskHop key or chord as one complete 20 ms HID report so partial modifiers do
+DeskHop key or chord as one complete 20 ms HID report (except V, held until
+physical release) so partial modifiers do
 not reach macOS or Karabiner-Elements. Switching uses bare F24 so an escaped
 event cannot latch Caps Lock or a modifier.
 
@@ -34,10 +35,16 @@ event cannot latch Caps Lock or a modifier.
 | `L` | Lock both computers | Right Control + L |
 | `Q`, `Q`, `Q` | Reboot both DeskHop boards | Left Control + Right Shift + Q (three times) |
 | `S` | Switch between computers | F24 |
+| `V` | Type the opposite Mac’s current clipboard on the focused Mac, if its helper is connected | Bare F23, held until physical V release |
 | `X` | Disable jitter/Pong mode on the selected output | Left Control + Right Shift + X |
 | `Y` | Save cursor-height calibration at the current pointer position | Right Shift + F12 + Y |
 
 Safety and behavior notes:
+
+- Clipboard typing requires DeskHop v0.115+ and a connected helper on the source
+  Mac. Either Mac can supply text; a receiver needs no helper. Without the
+  opposite helper, the shortcut is a no-op. Press V without other HID keys or
+  modifiers held; releasing the tri-layer keys alone does not release F23.
 
 - Configuration erase deliberately requires three uninterrupted Layer 3 + D
   taps. Each tap must arrive within one second of the preceding tap. Any other
