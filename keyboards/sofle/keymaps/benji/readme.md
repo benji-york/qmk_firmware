@@ -26,8 +26,8 @@ event cannot latch Caps Lock or a modifier.
 
 | Layer 3 key | DeskHop action | Chord emitted by QMK |
 | --- | --- | --- |
-| `A` | Put DeskHop board A in its UF2 bootloader | Left Shift + Right Shift + F12 + A |
-| `B` | Put DeskHop board B in its UF2 bootloader | Left Shift + Right Shift + F12 + B |
+| `Shift+A` | Put DeskHop board A in its bootloader | Left Shift + Right Shift + F12 + A |
+| `Shift+B` | Put DeskHop board B in its bootloader | Left Shift + Right Shift + F12 + B |
 | `C` | Enter or exit DeskHop configuration mode | Left Control + Right Shift + C + O |
 | `D`, `D`, `D` | Erase DeskHop's saved configuration | Right Shift + F12 + D |
 | `G` | Toggle gaming mode (relative mouse; edge switching disabled) | Left Control + Right Shift + G |
@@ -52,7 +52,10 @@ Safety and behavior notes:
 - Reboot sends one complete Left Control + Right Shift + Q chord for every
   Layer 3 + Q tap. DeskHop requires all three completed taps within one second
   and coordinates rebooting both boards; QMK sends every tap separately.
-- `A` and `B` reboot the corresponding **DeskHop board**, not a Sofle half.
+- Hold either Shift before tapping Layer 3 `A` or `B` to boot the corresponding
+  **DeskHop board**, not a Sofle half. Plain Layer 3 `A`/`B` do nothing.
+  Only a held Shift counts; a one-shot or synthetic weak Shift does not arm
+  either command. This guards the bootloader key beside clipboard paste.
 - `J` and `X` affect only the output selected when the command is issued.
 - `L` depends on the operating system configured for each DeskHop output. Set
   both outputs to macOS when both attached computers are Macs; otherwise

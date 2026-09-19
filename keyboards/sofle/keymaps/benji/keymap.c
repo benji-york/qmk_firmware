@@ -343,7 +343,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   _______, _______, _______, _______, _______, _______, _______,     _______, _______, _______, _______, _______, _______, _______,
                     _______, _______, _______, _______, _______,     _______, _______, _______, _______, _______
  ),
-// DeskHop control layer: A/B=boot boards, Q x3=reboot both, S=switch,
+// DeskHop control layer: Shift+A/B=boot boards, Q x3=reboot both, S=switch,
 // D x3=wipe, G=gaming, J=jitter, L=lock both, X=disable screensaver,
 // C=config, Y=calibrate, V=type the opposite Mac clipboard on the focused Mac.
 // Hold TL_UPPR + TL_LOWR to reach this layer. See readme.md for details.
@@ -458,14 +458,14 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             }
             return false;
         case DH_BOOT_A:
-            if (record->event.pressed) {
-                // Put DeskHop board A in bootloader mode: both Shifts + F12 + A.
+            if (record->event.pressed && (get_mods() & MOD_MASK_SHIFT)) {
+                // Require held Shift on Layer 3; emit both Shifts + F12 + A.
                 tap_deskhop_hotkey(MOD_BIT_LSHIFT | MOD_BIT_RSHIFT, KC_F12, KC_A);
             }
             return false;
         case DH_BOOT_B:
-            if (record->event.pressed) {
-                // Put DeskHop board B in bootloader mode: both Shifts + F12 + B.
+            if (record->event.pressed && (get_mods() & MOD_MASK_SHIFT)) {
+                // Require held Shift on Layer 3; emit both Shifts + F12 + B.
                 tap_deskhop_hotkey(MOD_BIT_LSHIFT | MOD_BIT_RSHIFT, KC_F12, KC_B);
             }
             return false;
